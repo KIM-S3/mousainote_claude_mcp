@@ -1,5 +1,7 @@
 # MousaiNote Claude MCP
 
+**한국어** | [English](./README.en.md)
+
 [MousaiNote](https://mousai.mousai.workers.dev)와 Claude Desktop을 연결하는 **MCP(Model Context Protocol) 서버**입니다. Claude와 대화하면서 메모를 저장·검색·조회하고, 폴더를 관리하고, 파일을 첨부할 수 있습니다.
 
 ## ✨ 주요 기능
@@ -20,31 +22,28 @@
 
 ## 🚀 설치 방법
 
-### 1. 저장소 클론 & 의존성 설치
+### 방법 A — 한 줄 설치 (권장)
 
 ```bash
-git clone https://github.com/KIM-S3/mousainote_claude_mcp.git
-cd mousainote_claude_mcp
-npm install
+npx mousainote-claude-mcp mousainote-mcp-init
 ```
 
-### 2. Claude Desktop 설정
+대화형 스크립트가 API 키를 묻고 Claude Desktop 설정을 자동으로 패치합니다. 기존 설정 파일은 자동으로 `.backup-<타임스탬프>` 이름으로 백업됩니다. 설치가 끝나면 Claude Desktop을 재시작하세요.
 
-Claude Desktop의 설정 파일을 엽니다:
+### 방법 B — 수동 설치
 
-- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
-- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+1. Claude Desktop 설정 파일을 엽니다:
+   - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+   - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 
-`mcpServers` 객체에 아래 항목을 추가하세요. **`args`의 경로는 방금 클론한 `mousai-mcp.js`의 절대 경로로 바꾸고**, `MOUSAI_API_KEY`에는 발급받은 본인의 API 키를 넣으세요.
+2. `mcpServers` 아래에 `mousai` 항목을 추가합니다:
 
 ```json
 {
   "mcpServers": {
     "mousai": {
-      "command": "node",
-      "args": [
-        "/absolute/path/to/mousainote_claude_mcp/mousai-mcp.js"
-      ],
+      "command": "npx",
+      "args": ["-y", "mousainote-claude-mcp"],
       "env": {
         "MOUSAI_API_KEY": "mousai_sk_여기에_본인_API_키"
       }
@@ -53,19 +52,39 @@ Claude Desktop의 설정 파일을 엽니다:
 }
 ```
 
-### 3. Claude Desktop 재시작
+3. Claude Desktop을 **완전히 종료**하고 (시스템 트레이 아이콘까지) 다시 시작합니다.
 
-설정을 저장한 뒤 Claude Desktop을 **완전히 종료하고 다시 시작**하세요 (시스템 트레이 아이콘까지 닫기).
+### 방법 C — 소스 클론
+
+```bash
+git clone https://github.com/KIM-S3/mousainote_claude_mcp.git
+cd mousainote_claude_mcp
+npm install
+```
+
+그 다음 Claude Desktop 설정 파일의 `args`에 `mousai-mcp.js`의 절대경로를 넣습니다:
+
+```json
+{
+  "mcpServers": {
+    "mousai": {
+      "command": "node",
+      "args": ["/absolute/path/to/mousai-mcp.js"],
+      "env": { "MOUSAI_API_KEY": "mousai_sk_..." }
+    }
+  }
+}
+```
 
 ## 💬 사용 예시
 
 Claude 대화창에 자연스럽게 요청하면 됩니다:
 
-- "이 내용 MousaiNote에 저장해줘" → `create_mousai_memo`
-- "Claude 폴더에 저장해줘" → `get_mousai_folders`로 폴더 id를 먼저 조회한 뒤 `create_mousai_memo` 호출
-- "MousaiNote에서 'React' 검색해줘" → `search_mousai_memos`
-- "최근 메모 10개 보여줘" → `get_mousai_memos`
-- "이 스크린샷 `C:/Users/.../shot.png` 첨부해서 저장해줘" → `create_mousai_memo`의 `files` 파라미터로 자동 업로드 & 첨부
+- *"이 내용 MousaiNote에 저장해줘"* → `create_mousai_memo`
+- *"Claude 폴더에 저장해줘"* → Claude가 `get_mousai_folders`로 id를 먼저 찾은 뒤 `create_mousai_memo` 호출
+- *"MousaiNote에서 'React' 검색해줘"* → `search_mousai_memos`
+- *"최근 메모 10개 보여줘"* → `get_mousai_memos`
+- *"이 스크린샷 `C:/Users/.../shot.png` 첨부해서 저장해줘"* → `create_mousai_memo`의 `files`로 자동 업로드 & 첨부
 
 ## 🛠️ 도구 파라미터
 
@@ -108,7 +127,7 @@ Claude 대화창에 자연스럽게 요청하면 됩니다:
 
 ## 🔒 보안
 
-- API 키는 **절대 공개 저장소나 클라이언트 코드에 넣지 마세요**. 이 프로젝트는 `process.env.MOUSAI_API_KEY`만 사용하며 키를 파일에 저장하지 않습니다.
+- API 키는 **절대 공개 저장소나 클라이언트 코드에 넣지 마세요**. 이 프로젝트는 `process.env.MOUSAI_API_KEY`만 참조하며 키를 파일에 저장하지 않습니다.
 - `claude_desktop_config.json`은 로컬에만 존재하며 절대 공유하지 마세요.
 - 키가 유출된 것 같으면 즉시 MousaiNote 앱에서 키를 재발급하세요.
 
