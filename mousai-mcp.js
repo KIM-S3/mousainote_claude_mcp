@@ -178,7 +178,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: "upload_mousai_file",
-        description: "파일을 Cloudflare R2에 업로드하고 { r2Key, name, size, type } 메타데이터를 반환합니다. 보통은 create_mousai_memo의 files 파라미터가 자동으로 업로드하므로 이 도구를 직접 부를 필요는 적지만, 파일만 먼저 업로드하고 나중에 메모에 붙이고 싶을 때 사용하세요.",
+        description: "파일을 노트 저장소에 저장하고 메모 첨부에 필요한 메타데이터({ r2Key, name, size, type })를 반환합니다. 보통은 create_mousai_memo의 files 파라미터가 자동으로 처리하므로 이 도구를 직접 부를 필요는 적지만, 파일만 먼저 저장해두고 나중에 메모에 붙이고 싶을 때 사용하세요.",
         inputSchema: {
           type: "object",
           properties: {

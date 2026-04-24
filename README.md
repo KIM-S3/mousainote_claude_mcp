@@ -12,7 +12,7 @@ An **MCP (Model Context Protocol) server** that connects [MousaiNote](https://mo
 | `get_mousai_memos` | List recent memos (folder scoping supported) |
 | `search_mousai_memos` | Keyword search (folder scoping supported) |
 | `get_mousai_folders` | List user folders |
-| `upload_mousai_file` | Upload a file to R2 and get attachment metadata |
+| `upload_mousai_file` | Save a file and get metadata for attaching to a note |
 
 ## 📋 Prerequisites
 

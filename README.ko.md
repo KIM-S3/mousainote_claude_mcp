@@ -12,7 +12,7 @@
 | `get_mousai_memos` | 최근 메모 목록 조회 (폴더 필터링 지원) |
 | `search_mousai_memos` | 키워드 검색 (폴더 필터링 지원) |
 | `get_mousai_folders` | 폴더 목록 조회 |
-| `upload_mousai_file` | 파일을 R2에 업로드하여 메모 첨부용 메타데이터 발급 |
+| `upload_mousai_file` | 파일을 노트 저장소에 저장하고 메모 첨부에 쓸 메타데이터 발급 |
 
 ## 📋 사전 요구사항
 
