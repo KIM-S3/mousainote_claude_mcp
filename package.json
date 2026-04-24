@@ -1,0 +1,39 @@
+{
+  "name": "mousainote-claude-mcp",
+  "version": "5.0.0",
+  "description": "Claude Desktop MCP server for MousaiNote — save/search/browse memos, manage folders, and attach files from Claude conversations.",
+  "main": "mousai-mcp.js",
+  "type": "module",
+  "bin": {
+    "mousainote-mcp": "./mousai-mcp.js"
+  },
+  "scripts": {
+    "start": "node mousai-mcp.js"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "claude",
+    "claude-desktop",
+    "mousai",
+    "mousainote",
+    "anthropic",
+    "notes"
+  ],
+  "author": "KIM-S3 <hyune1307@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KIM-S3/mousainote_claude_mcp.git"
+  },
+  "homepage": "https://github.com/KIM-S3/mousainote_claude_mcp#readme",
+  "bugs": {
+    "url": "https://github.com/KIM-S3/mousainote_claude_mcp/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0"
+  }
+}
