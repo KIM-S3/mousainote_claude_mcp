@@ -12,7 +12,7 @@
     "mousai-mcp.js",
     "bin/",
     "README.md",
-    "README.en.md",
+    "README.ko.md",
     "LICENSE"
   ],
   "scripts": {

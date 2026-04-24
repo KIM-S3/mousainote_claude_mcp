@@ -1,42 +1,42 @@
 # MousaiNote Claude MCP
 
-**한국어** | [English](./README.en.md)
+**English** | [한국어](./README.ko.md)
 
-[MousaiNote](https://mousai.mousai.workers.dev)와 Claude Desktop을 연결하는 **MCP(Model Context Protocol) 서버**입니다. Claude와 대화하면서 메모를 저장·검색·조회하고, 폴더를 관리하고, 파일을 첨부할 수 있습니다.
+An **MCP (Model Context Protocol) server** that connects [MousaiNote](https://mousai.mousai.workers.dev) with Claude Desktop. Save, search, and browse memos, manage folders, and attach files — all from inside Claude conversations.
 
-## ✨ 주요 기능
+## ✨ Features
 
-| Tool | 설명 |
-|------|------|
-| `create_mousai_memo` | 메모 생성 (폴더 지정·파일 첨부 지원) |
-| `get_mousai_memos` | 최근 메모 목록 조회 (폴더 필터링 지원) |
-| `search_mousai_memos` | 키워드 검색 (폴더 필터링 지원) |
-| `get_mousai_folders` | 폴더 목록 조회 |
-| `upload_mousai_file` | 파일을 R2에 업로드하여 메모 첨부용 메타데이터 발급 |
+| Tool | Description |
+|------|-------------|
+| `create_mousai_memo` | Create a memo (optional folder + file attachments) |
+| `get_mousai_memos` | List recent memos (folder scoping supported) |
+| `search_mousai_memos` | Keyword search (folder scoping supported) |
+| `get_mousai_folders` | List user folders |
+| `upload_mousai_file` | Upload a file to R2 and get attachment metadata |
 
-## 📋 사전 요구사항
+## 📋 Prerequisites
 
-- **Node.js 18 이상** (네이티브 `fetch` 필요)
+- **Node.js 18+** (required for native `fetch`)
 - **Claude Desktop**
-- **MousaiNote 개인 API 키** — MousaiNote 앱 설정에서 발급받으세요.
+- **A MousaiNote personal API key** — generate one in the MousaiNote app settings.
 
-## 🚀 설치 방법
+## 🚀 Installation
 
-### 방법 A — 한 줄 설치 (권장)
+### Option A — One-line install (recommended)
 
 ```bash
 npx mousainote-claude-mcp mousainote-mcp-init
 ```
 
-대화형 스크립트가 API 키를 묻고 Claude Desktop 설정을 자동으로 패치합니다. 기존 설정 파일은 자동으로 `.backup-<타임스탬프>` 이름으로 백업됩니다. 설치가 끝나면 Claude Desktop을 재시작하세요.
+This interactive script will ask for your API key and automatically patch your Claude Desktop config. After it finishes, restart Claude Desktop.
 
-### 방법 B — 수동 설치
+### Option B — Manual install
 
-1. Claude Desktop 설정 파일을 엽니다:
+1. Open your Claude Desktop config file:
    - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
    - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 
-2. `mcpServers` 아래에 `mousai` 항목을 추가합니다:
+2. Add the `mousai` entry under `mcpServers`:
 
 ```json
 {
@@ -45,16 +45,16 @@ npx mousainote-claude-mcp mousainote-mcp-init
       "command": "npx",
       "args": ["-y", "mousainote-claude-mcp"],
       "env": {
-        "MOUSAI_API_KEY": "mousai_sk_여기에_본인_API_키"
+        "MOUSAI_API_KEY": "mousai_sk_your_key_here"
       }
     }
   }
 }
 ```
 
-3. Claude Desktop을 **완전히 종료**하고 (시스템 트레이 아이콘까지) 다시 시작합니다.
+3. Fully quit Claude Desktop (including the system tray icon) and relaunch it.
 
-### 방법 C — 소스 클론
+### Option C — Clone from source
 
 ```bash
 git clone https://github.com/KIM-S3/mousainote_claude_mcp.git
@@ -62,7 +62,7 @@ cd mousainote_claude_mcp
 npm install
 ```
 
-그 다음 Claude Desktop 설정 파일의 `args`에 `mousai-mcp.js`의 절대경로를 넣습니다:
+Then point your Claude Desktop config at the absolute path of `mousai-mcp.js`:
 
 ```json
 {
@@ -76,24 +76,24 @@ npm install
 }
 ```
 
-## 💬 사용 예시
+## 💬 Usage Examples
 
-Claude 대화창에 자연스럽게 요청하면 됩니다:
+Just ask Claude naturally:
 
-- *"이 내용 MousaiNote에 저장해줘"* → `create_mousai_memo`
-- *"Claude 폴더에 저장해줘"* → Claude가 `get_mousai_folders`로 id를 먼저 찾은 뒤 `create_mousai_memo` 호출
-- *"MousaiNote에서 'React' 검색해줘"* → `search_mousai_memos`
-- *"최근 메모 10개 보여줘"* → `get_mousai_memos`
-- *"이 스크린샷 `C:/Users/.../shot.png` 첨부해서 저장해줘"* → `create_mousai_memo`의 `files`로 자동 업로드 & 첨부
+- *"Save this to MousaiNote"* → `create_mousai_memo`
+- *"Save it to the Claude folder"* → Claude resolves the folder id via `get_mousai_folders` and calls `create_mousai_memo` with `folderId`
+- *"Search my MousaiNote for 'React'"* → `search_mousai_memos`
+- *"Show me the 10 most recent memos"* → `get_mousai_memos`
+- *"Attach this screenshot at `C:/.../shot.png` and save it"* → `create_mousai_memo` uses `files` to auto-upload and attach
 
-## 🛠️ 도구 파라미터
+## 🛠️ Tool Parameters
 
 ### `create_mousai_memo`
 
 ```json
 {
-  "content": "메모 본문 (마크다운)",
-  "folderId": "folder_... (선택)",
+  "content": "memo body (markdown)",
+  "folderId": "folder_... (optional)",
   "files": [
     { "path": "/absolute/path/to/file.png" },
     { "base64Data": "...", "fileName": "doc.pdf", "mimeType": "application/pdf" }
@@ -110,40 +110,40 @@ Claude 대화창에 자연스럽게 요청하면 됩니다:
 }
 ```
 
-- `files`를 주면 자동으로 업로드 후 첨부 메타데이터가 조립됩니다.
-- `imageIds`는 `upload_mousai_file`로 이미 업로드한 파일을 바로 첨부할 때 사용합니다.
-- 둘 다 생략하면 텍스트 전용 메모가 생성됩니다.
+- Supply `files` to auto-upload and attach.
+- Supply `imageIds` to attach files that were already uploaded via `upload_mousai_file`.
+- Omit both to create a text-only memo.
 
 ### `get_mousai_memos` / `search_mousai_memos`
 
-- `limit` (get 전용, 기본 20)
-- `query` (search 전용, 필수)
-- `folderId` (선택) — 특정 폴더로 범위 제한
+- `limit` (get only, default 20)
+- `query` (search only, required)
+- `folderId` (optional) — scope to a single folder
 
 ### `upload_mousai_file`
 
-- `path` 또는 `base64Data` 중 하나 필수
-- `fileName`, `mimeType` 생략 시 확장자 기반 추론
+- Either `path` or `base64Data` is required
+- `fileName`, `mimeType` are inferred from the extension when omitted
 
-## 🔒 보안
+## 🔒 Security
 
-- API 키는 **절대 공개 저장소나 클라이언트 코드에 넣지 마세요**. 이 프로젝트는 `process.env.MOUSAI_API_KEY`만 참조하며 키를 파일에 저장하지 않습니다.
-- `claude_desktop_config.json`은 로컬에만 존재하며 절대 공유하지 마세요.
-- 키가 유출된 것 같으면 즉시 MousaiNote 앱에서 키를 재발급하세요.
+- **Never** commit your API key to a public repository or embed it in client code. This project only reads `process.env.MOUSAI_API_KEY` — it never stores keys in any file.
+- `claude_desktop_config.json` lives on your machine only — don't share it.
+- If you suspect a key leak, regenerate your key in the MousaiNote app immediately.
 
-## 🐞 문제 해결
+## 🐞 Troubleshooting
 
-| 증상 | 원인/조치 |
-|------|----------|
-| `MOUSAI_API_KEY 환경 변수가 필요합니다` | Claude Desktop config의 `env` 블록에 키가 없거나 오타. |
-| Claude에 툴이 보이지 않음 | Claude Desktop을 시스템 트레이에서 완전히 종료 후 재시작. |
-| `401 Unauthorized` | API 키가 잘못되었거나 만료됨. MousaiNote 앱에서 재발급. |
-| `ENOENT: no such file or directory` | `args`의 경로가 잘못됨. 절대경로 확인. Windows에선 슬래시 `/` 권장. |
+| Symptom | Cause / Fix |
+|---------|-------------|
+| `MOUSAI_API_KEY 환경 변수가 필요합니다` | Missing/typo in the `env` block of your Claude Desktop config. |
+| Tools don't appear in Claude | Fully quit Claude Desktop from the system tray, then relaunch. |
+| `401 Unauthorized` | Key is wrong or expired — regenerate in the MousaiNote app. |
+| `ENOENT: no such file or directory` | Wrong path in `args`. Use absolute paths (forward slashes on Windows). |
 
-## 📄 라이선스
+## 📄 License
 
 MIT © KIM-S3
 
-## 🙌 기여
+## 🙌 Contributing
 
-이슈와 Pull Request 환영합니다: https://github.com/KIM-S3/mousainote_claude_mcp
+Issues and pull requests welcome: https://github.com/KIM-S3/mousainote_claude_mcp
