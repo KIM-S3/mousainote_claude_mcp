@@ -106,7 +106,7 @@ function toAttachment(uploadData) {
 const server = new Server(
   {
     name: "Mousai-MCP",
-    version: "5.1.0",
+    version: "5.2.0",
   },
   {
     capabilities: {
