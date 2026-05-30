@@ -106,7 +106,7 @@ function toAttachment(uploadData) {
 const server = new Server(
   {
     name: "Mousai-MCP",
-    version: "5.0.0",
+    version: "5.1.0",
   },
   {
     capabilities: {
@@ -245,6 +245,84 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           },
         },
       },
+      {
+        name: "update_mousai_memo",
+        description: "기존 Mousai 메모의 내용을 수정(덮어쓰기)합니다. 먼저 get_mousai_memos 또는 search_mousai_memos로 대상 메모의 id를 확인한 뒤 호출하세요. 잠금(PIN) 메모는 수정할 수 없습니다.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            id: {
+              type: "string",
+              description: "수정할 메모의 ID",
+            },
+            content: {
+              type: "string",
+              description: "새로운 메모 내용 (마크다운). 기존 내용을 완전히 대체합니다.",
+            },
+          },
+          required: ["id", "content"],
+        },
+      },
+      {
+        name: "delete_mousai_memo",
+        description: "Mousai 메모를 휴지통으로 이동합니다(소프트 삭제). 영구 삭제가 아니라 앱에서 복구할 수 있습니다. 먼저 get_mousai_memos 또는 search_mousai_memos로 대상 메모의 id를 확인하세요.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            id: {
+              type: "string",
+              description: "삭제할 메모의 ID",
+            },
+          },
+          required: ["id"],
+        },
+      },
+      {
+        name: "create_mousai_folder",
+        description: "Mousai에 새 폴더를 생성합니다. 생성된 폴더의 id를 반환하므로, 이어서 create_mousai_memo나 move_mousai_memo에 folderId로 사용할 수 있습니다.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            name: {
+              type: "string",
+              description: "생성할 폴더 이름",
+            },
+          },
+          required: ["name"],
+        },
+      },
+      {
+        name: "move_mousai_memo",
+        description: "메모가 저장된 폴더를 변경(이동)합니다. folderId를 생략하거나 비우면 미분류(루트)로 이동합니다. 폴더 ID를 모르면 먼저 get_mousai_folders로 확인하세요.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            id: {
+              type: "string",
+              description: "이동할 메모의 ID",
+            },
+            folderId: {
+              type: "string",
+              description: "대상 폴더의 ID (선택). 생략하면 미분류로 이동합니다.",
+            },
+          },
+          required: ["id"],
+        },
+      },
+      {
+        name: "delete_mousai_folder",
+        description: "Mousai 폴더를 삭제합니다. 폴더 안의 메모는 삭제되지 않고 미분류(루트)로 이동합니다. 폴더 ID를 모르면 먼저 get_mousai_folders로 확인하세요.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            id: {
+              type: "string",
+              description: "삭제할 폴더의 ID",
+            },
+          },
+          required: ["id"],
+        },
+      },
     ],
   };
 });
@@ -299,6 +377,26 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       data = await callMcpApi("get_memos", payload);
       const count = Array.isArray(data) ? data.length : (data?.memos?.length ?? 0);
       text = `메모 ${count}건 조회 (limit=${limit}${folderId ? `, 폴더: ${folderId}` : ""})\n\n${JSON.stringify(data, null, 2)}`;
+    } else if (name === "update_mousai_memo") {
+      const { id, content } = args;
+      data = await callMcpApi("update_memo", { id, content });
+      text = `메모를 수정했습니다 (id: ${id}).\n\n${JSON.stringify(data, null, 2)}`;
+    } else if (name === "delete_mousai_memo") {
+      const { id } = args;
+      data = await callMcpApi("delete_memo", { id });
+      text = `메모를 휴지통으로 이동했습니다 (id: ${id}). 앱에서 복구할 수 있습니다.\n\n${JSON.stringify(data, null, 2)}`;
+    } else if (name === "create_mousai_folder") {
+      const { name: folderName } = args;
+      data = await callMcpApi("create_folder", { name: folderName });
+      text = `폴더를 생성했습니다: ${data?.name ?? folderName} (id: ${data?.id ?? "?"}).\n\n${JSON.stringify(data, null, 2)}`;
+    } else if (name === "move_mousai_memo") {
+      const { id, folderId } = args;
+      data = await callMcpApi("move_memo", { id, ...(folderId ? { folderId } : {}) });
+      text = `메모를 이동했습니다 (id: ${id}${folderId ? ` → 폴더: ${folderId}` : " → 미분류"}).\n\n${JSON.stringify(data, null, 2)}`;
+    } else if (name === "delete_mousai_folder") {
+      const { id } = args;
+      data = await callMcpApi("delete_folder", { id });
+      text = `폴더를 삭제했습니다 (id: ${id}). 폴더 안 메모는 미분류로 이동했습니다.\n\n${JSON.stringify(data, null, 2)}`;
     } else {
       throw new Error(`알 수 없는 Tool: ${name}`);
     }
