@@ -9,9 +9,14 @@ An **MCP (Model Context Protocol) server** that connects [MousaiNote](https://mo
 | Tool | Description |
 |------|-------------|
 | `create_mousai_memo` | Create a memo (optional folder + file attachments) |
+| `update_mousai_memo` | Overwrite an existing memo's content |
+| `delete_mousai_memo` | Move a memo to trash (soft delete, recoverable in-app) |
+| `move_mousai_memo` | Move a memo to another folder (or to root) |
 | `get_mousai_memos` | List recent memos (folder scoping supported) |
 | `search_mousai_memos` | Keyword search (folder scoping supported) |
 | `get_mousai_folders` | List user folders |
+| `create_mousai_folder` | Create a new folder |
+| `delete_mousai_folder` | Delete a folder (its memos move to root, not deleted) |
 | `upload_mousai_file` | Save a file and get metadata for attaching to a note |
 
 ## 📋 Prerequisites
@@ -85,6 +90,11 @@ Just ask Claude naturally:
 - *"Search my MousaiNote for 'React'"* → `search_mousai_memos`
 - *"Show me the 10 most recent memos"* → `get_mousai_memos`
 - *"Attach this screenshot at `C:/.../shot.png` and save it"* → `create_mousai_memo` uses `files` to auto-upload and attach
+- *"Fix the typo in that memo"* → `update_mousai_memo` with the memo `id`
+- *"Delete that memo"* → `delete_mousai_memo` (goes to trash, recoverable)
+- *"Make a new folder called Research"* → `create_mousai_folder`
+- *"Move this memo into the Research folder"* → `move_mousai_memo` with `folderId`
+- *"Delete the Research folder"* → `delete_mousai_folder` (memos inside move to root)
 
 ## 🛠️ Tool Parameters
 
@@ -119,6 +129,29 @@ Just ask Claude naturally:
 - `limit` (get only, default 20)
 - `query` (search only, required)
 - `folderId` (optional) — scope to a single folder
+
+### `update_mousai_memo`
+
+- `id` (required) — target memo id (find it via `get_mousai_memos` / `search_mousai_memos`)
+- `content` (required) — new markdown body; fully replaces the previous content
+- PIN-locked memos cannot be edited.
+
+### `delete_mousai_memo`
+
+- `id` (required) — moved to trash (soft delete), recoverable in the app.
+
+### `move_mousai_memo`
+
+- `id` (required) — memo to move
+- `folderId` (optional) — destination folder; omit to move to root (uncategorized)
+
+### `create_mousai_folder`
+
+- `name` (required) — returns the new folder `id` for use with `create_mousai_memo` / `move_mousai_memo`
+
+### `delete_mousai_folder`
+
+- `id` (required) — deletes the folder; memos inside are moved to root, not deleted.
 
 ### `upload_mousai_file`
 

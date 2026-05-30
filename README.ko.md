@@ -9,9 +9,14 @@
 | Tool | 설명 |
 |------|------|
 | `create_mousai_memo` | 메모 생성 (폴더 지정·파일 첨부 지원) |
+| `update_mousai_memo` | 기존 메모 내용 수정 (덮어쓰기) |
+| `delete_mousai_memo` | 메모를 휴지통으로 이동 (소프트 삭제, 앱에서 복구 가능) |
+| `move_mousai_memo` | 메모를 다른 폴더로 이동 (미분류로도 가능) |
 | `get_mousai_memos` | 최근 메모 목록 조회 (폴더 필터링 지원) |
 | `search_mousai_memos` | 키워드 검색 (폴더 필터링 지원) |
 | `get_mousai_folders` | 폴더 목록 조회 |
+| `create_mousai_folder` | 새 폴더 생성 |
+| `delete_mousai_folder` | 폴더 삭제 (안의 메모는 삭제되지 않고 미분류로 이동) |
 | `upload_mousai_file` | 파일을 노트 저장소에 저장하고 메모 첨부에 쓸 메타데이터 발급 |
 
 ## 📋 사전 요구사항
@@ -85,6 +90,11 @@ Claude 대화창에 자연스럽게 요청하면 됩니다:
 - *"MousaiNote에서 'React' 검색해줘"* → `search_mousai_memos`
 - *"최근 메모 10개 보여줘"* → `get_mousai_memos`
 - *"이 스크린샷 `C:/Users/.../shot.png` 첨부해서 저장해줘"* → `create_mousai_memo`의 `files`로 자동 업로드 & 첨부
+- *"그 메모 오타 좀 고쳐줘"* → 메모 `id`로 `update_mousai_memo`
+- *"그 메모 삭제해줘"* → `delete_mousai_memo` (휴지통으로 이동, 복구 가능)
+- *"Research 라는 폴더 새로 만들어줘"* → `create_mousai_folder`
+- *"이 메모 Research 폴더로 옮겨줘"* → `folderId`로 `move_mousai_memo`
+- *"Research 폴더 삭제해줘"* → `delete_mousai_folder` (안의 메모는 미분류로 이동)
 
 ## 🛠️ 도구 파라미터
 
@@ -119,6 +129,29 @@ Claude 대화창에 자연스럽게 요청하면 됩니다:
 - `limit` (get 전용, 기본 20)
 - `query` (search 전용, 필수)
 - `folderId` (선택) — 특정 폴더로 범위 제한
+
+### `update_mousai_memo`
+
+- `id` (필수) — 수정할 메모 id (`get_mousai_memos` / `search_mousai_memos`로 확인)
+- `content` (필수) — 새 마크다운 본문, 기존 내용을 완전히 대체
+- 잠금(PIN) 메모는 수정할 수 없습니다.
+
+### `delete_mousai_memo`
+
+- `id` (필수) — 휴지통으로 이동(소프트 삭제), 앱에서 복구 가능
+
+### `move_mousai_memo`
+
+- `id` (필수) — 이동할 메모
+- `folderId` (선택) — 대상 폴더. 생략하면 미분류(루트)로 이동
+
+### `create_mousai_folder`
+
+- `name` (필수) — 생성된 폴더 `id`를 반환 (`create_mousai_memo` / `move_mousai_memo`에 사용)
+
+### `delete_mousai_folder`
+
+- `id` (필수) — 폴더 삭제. 안의 메모는 삭제되지 않고 미분류로 이동
 
 ### `upload_mousai_file`
 
