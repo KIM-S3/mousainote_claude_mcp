@@ -1,6 +1,6 @@
 {
   "name": "mousainote-claude-mcp",
-  "version": "5.2.0",
+  "version": "5.3.0",
   "description": "Claude Desktop MCP server for MousaiNote — save/search/browse memos, manage folders, and attach files from Claude conversations.",
   "main": "mousai-mcp.js",
   "type": "module",

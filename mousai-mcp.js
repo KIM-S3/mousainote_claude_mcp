@@ -103,10 +103,95 @@ function toAttachment(uploadData) {
   };
 }
 
+const AI_KEYWORD_SCHEMA_VERSION = 1;
+
+function getMemoContentHash(content = "") {
+  const text = String(content || "");
+  let hash = 2166136261;
+  for (let i = 0; i < text.length; i += 1) {
+    hash ^= text.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `fnv1a-${(hash >>> 0).toString(16).padStart(8, "0")}`;
+}
+
+function parseAiKeywords(value) {
+  if (!value) return {};
+  if (typeof value === "string") {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return {};
+    }
+  }
+  return typeof value === "object" ? value : {};
+}
+
+function normalizeMemoList(data) {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.memos)) return data.memos;
+  if (Array.isArray(data?.results)) return data.results;
+  return [];
+}
+
+function getMemoAiKeywords(memo = {}) {
+  return parseAiKeywords(memo.aiKeywords ?? memo.ai_keywords ?? memo.ai_keyword_metadata);
+}
+
+function isLockedMemo(memo = {}) {
+  return !!memo.locked || memo.is_encrypted === 1 || memo.isEncrypted === 1 || memo.isServerEncrypted === true;
+}
+
+function getKeywordRefreshState(memo = {}) {
+  const content = memo.content || "";
+  const contentHash = getMemoContentHash(content);
+  const aiKeywords = getMemoAiKeywords(memo);
+  const keywords = Array.isArray(aiKeywords.keywords) ? aiKeywords.keywords.filter(Boolean) : [];
+  const locked = isLockedMemo(memo);
+  const isFresh = !locked
+    && aiKeywords.schemaVersion === AI_KEYWORD_SCHEMA_VERSION
+    && aiKeywords.contentHash === contentHash
+    && keywords.length > 0;
+  return {
+    contentHash,
+    isFresh,
+    needsRefresh: locked ? false : !isFresh,
+    disabledReason: locked ? "locked_memo" : null,
+    aiKeywords,
+  };
+}
+
+function normalizeKeywordResult(args = {}) {
+  const keywords = Array.isArray(args.keywords)
+    ? args.keywords.map((keyword) => String(keyword || "").trim()).filter(Boolean).slice(0, 8)
+    : [];
+  if (keywords.length === 0) throw new Error("keywords must contain at least one keyword");
+
+  const topics = Array.isArray(args.topics)
+    ? args.topics.map((topic) => String(topic || "").trim()).filter(Boolean).slice(0, 6)
+    : [];
+  const confidence = typeof args.confidence === "number"
+    ? Math.max(0, Math.min(1, args.confidence))
+    : null;
+
+  return {
+    schemaVersion: AI_KEYWORD_SCHEMA_VERSION,
+    model: args.model || "claude",
+    contentHash: args.contentHash,
+    keywords,
+    topics,
+    summary: typeof args.summary === "string" ? args.summary.trim() : "",
+    confidence,
+    updatedAt: new Date().toISOString(),
+    needsRefresh: false,
+    disabledReason: null,
+  };
+}
+
 const server = new Server(
   {
     name: "Mousai-MCP",
-    version: "5.2.0",
+    version: "5.3.0",
   },
   {
     capabilities: {
@@ -264,6 +349,69 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         },
       },
       {
+        name: "get_mousai_keyword_refresh_queue",
+        description: "Return memos that need Claude-generated Universe keywords. Use this before extracting keywords. Locked/encrypted memos are skipped. The returned contentHash must be passed back to save_mousai_ai_keywords to avoid saving stale results.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            limit: {
+              type: "number",
+              description: "Maximum memos to inspect and return. Default 50.",
+              default: 50,
+            },
+            folderId: {
+              type: "string",
+              description: "Optional folder id scope.",
+            },
+            includeFresh: {
+              type: "boolean",
+              description: "When true, include already-fresh keyword metadata for audit/debugging. Default false.",
+              default: false,
+            },
+          },
+        },
+      },
+      {
+        name: "save_mousai_ai_keywords",
+        description: "Save Claude-generated Universe keyword metadata for one memo. Extract 3-8 concise, noun-phrase keywords from the memo, prefer Korean phrases when the memo is Korean, avoid generic words, and pass the exact contentHash from get_mousai_keyword_refresh_queue.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            id: {
+              type: "string",
+              description: "Memo id.",
+            },
+            contentHash: {
+              type: "string",
+              description: "Exact contentHash returned by get_mousai_keyword_refresh_queue for this memo.",
+            },
+            keywords: {
+              type: "array",
+              description: "3-8 high-signal keywords or short noun phrases. Prefer phrases like '추종 심리' over generic single words.",
+              items: { type: "string" },
+            },
+            topics: {
+              type: "array",
+              description: "Optional broader topics, max 6.",
+              items: { type: "string" },
+            },
+            summary: {
+              type: "string",
+              description: "Optional one-sentence summary of the memo.",
+            },
+            confidence: {
+              type: "number",
+              description: "Optional confidence score from 0 to 1.",
+            },
+            model: {
+              type: "string",
+              description: "Model/source label. Default claude.",
+            },
+          },
+          required: ["id", "contentHash", "keywords"],
+        },
+      },
+      {
         name: "delete_mousai_memo",
         description: "Mousai 메모를 휴지통으로 이동합니다(소프트 삭제). 영구 삭제가 아니라 앱에서 복구할 수 있습니다. 먼저 get_mousai_memos 또는 search_mousai_memos로 대상 메모의 id를 확인하세요.",
         inputSchema: {
@@ -381,6 +529,35 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { id, content } = args;
       data = await callMcpApi("update_memo", { id, content });
       text = `메모를 수정했습니다 (id: ${id}).\n\n${JSON.stringify(data, null, 2)}`;
+    } else if (name === "get_mousai_keyword_refresh_queue") {
+      const { limit = 50, folderId, includeFresh = false } = args;
+      const payload = { limit, ...(folderId ? { folderId } : {}) };
+      data = await callMcpApi("get_memos", payload);
+      const memos = normalizeMemoList(data);
+      const queue = memos
+        .map((memo) => {
+          const state = getKeywordRefreshState(memo);
+          return {
+            id: String(memo.id),
+            content: memo.content || "",
+            contentHash: state.contentHash,
+            needsRefresh: state.needsRefresh,
+            disabledReason: state.disabledReason,
+            existingKeywords: state.aiKeywords?.keywords || [],
+            folderId: memo.folderId ?? memo.folder_id ?? null,
+            updatedAt: memo.updatedAt ?? memo.updated_at ?? memo.timestamp ?? memo.created_at ?? null,
+          };
+        })
+        .filter((memo) => includeFresh || memo.needsRefresh)
+        .slice(0, limit);
+      text = `Universe keyword refresh queue: ${queue.length} memo(s).\n\n${JSON.stringify({ queue }, null, 2)}`;
+    } else if (name === "save_mousai_ai_keywords") {
+      const { id, contentHash } = args;
+      if (!id) throw new Error("id is required");
+      if (!contentHash) throw new Error("contentHash is required");
+      const aiKeywords = normalizeKeywordResult(args);
+      data = await callMcpApi("update_memo_ai_keywords", { id, aiKeywords });
+      text = `AI 키워드를 저장했습니다 (id: ${id}, keywords: ${aiKeywords.keywords.length}).\n\n${JSON.stringify(data, null, 2)}`;
     } else if (name === "delete_mousai_memo") {
       const { id } = args;
       data = await callMcpApi("delete_memo", { id });

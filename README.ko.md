@@ -18,6 +18,8 @@
 | `create_mousai_folder` | 새 폴더 생성 |
 | `delete_mousai_folder` | 폴더 삭제 (안의 메모는 삭제되지 않고 미분류로 이동) |
 | `upload_mousai_file` | 파일을 노트 저장소에 저장하고 메모 첨부에 쓸 메타데이터 발급 |
+| `get_mousai_keyword_refresh_queue` | Claude가 유니버스 키워드를 생성해야 할 메모 목록 조회 |
+| `save_mousai_ai_keywords` | Claude가 추출한 유니버스 키워드 메타데이터 저장 |
 
 ## 📋 사전 요구사항
 
@@ -157,6 +159,28 @@ Claude 대화창에 자연스럽게 요청하면 됩니다:
 
 - `path` 또는 `base64Data` 중 하나 필수
 - `fileName`, `mimeType` 생략 시 확장자 기반 추론
+
+### 유니버스 AI 키워드
+
+먼저 `get_mousai_keyword_refresh_queue`를 호출합니다. 응답에는 `id`, `content`, `contentHash`, `needsRefresh`, `existingKeywords`가 포함됩니다.
+
+Claude는 각 메모에서 3-8개의 핵심 키워드 또는 짧은 명사구를 추출해야 합니다. 한국어 메모는 한국어 구문을 우선하고, `심리` 같은 넓은 단어보다 `추종 심리` 같은 구체적인 구문을 선호하세요.
+
+그 다음 `save_mousai_ai_keywords`를 호출합니다.
+
+```json
+{
+  "id": "memo_id",
+  "contentHash": "fnv1a-...",
+  "keywords": ["추종 심리", "제품 의도", "영리한 유혹"],
+  "topics": ["소비자 심리"],
+  "summary": "메모 한 문장 요약",
+  "confidence": 0.86,
+  "model": "claude"
+}
+```
+
+Mousai API는 MCP action `update_memo_ai_keywords`를 지원하고 `aiKeywords` payload를 저장해야 합니다.
 
 ## 🔒 보안
 

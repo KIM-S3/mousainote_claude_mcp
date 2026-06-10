@@ -18,6 +18,8 @@ An **MCP (Model Context Protocol) server** that connects [MousaiNote](https://mo
 | `create_mousai_folder` | Create a new folder |
 | `delete_mousai_folder` | Delete a folder (its memos move to root, not deleted) |
 | `upload_mousai_file` | Save a file and get metadata for attaching to a note |
+| `get_mousai_keyword_refresh_queue` | List memos that need Claude-generated Universe keywords |
+| `save_mousai_ai_keywords` | Save Claude-generated Universe keyword metadata for one memo |
 
 ## 📋 Prerequisites
 
@@ -95,6 +97,7 @@ Just ask Claude naturally:
 - *"Make a new folder called Research"* → `create_mousai_folder`
 - *"Move this memo into the Research folder"* → `move_mousai_memo` with `folderId`
 - *"Delete the Research folder"* → `delete_mousai_folder` (memos inside move to root)
+- *"Generate Universe keywords for my MousaiNote memos"* → `get_mousai_keyword_refresh_queue`, then `save_mousai_ai_keywords`
 
 ## 🛠️ Tool Parameters
 
@@ -157,6 +160,28 @@ Just ask Claude naturally:
 
 - Either `path` or `base64Data` is required
 - `fileName`, `mimeType` are inferred from the extension when omitted
+
+### Universe AI keywords
+
+Use `get_mousai_keyword_refresh_queue` first. It returns pending memos with `id`, `content`, `contentHash`, `needsRefresh`, and `existingKeywords`.
+
+For each pending memo, Claude should extract 3-8 high-signal keywords or short noun phrases. Prefer Korean phrases when the memo is Korean, avoid generic words, and favor phrases such as `추종 심리` over broad single words such as `심리`.
+
+Then call `save_mousai_ai_keywords`:
+
+```json
+{
+  "id": "memo_id",
+  "contentHash": "fnv1a-...",
+  "keywords": ["추종 심리", "제품 의도", "영리한 유혹"],
+  "topics": ["소비자 심리"],
+  "summary": "One-sentence memo summary",
+  "confidence": 0.86,
+  "model": "claude"
+}
+```
+
+The Mousai API must support the MCP action `update_memo_ai_keywords` and persist the `aiKeywords` payload.
 
 ## 🔒 Security
 
